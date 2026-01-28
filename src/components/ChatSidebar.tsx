@@ -1,6 +1,9 @@
 'use client';
 
-import { Search, MoreVertical, MessageCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, MoreVertical, MessageCircle, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../contexts/AuthContext';
 import { Chat } from '../types/chat';
 
 interface ChatSidebarProps {
@@ -14,22 +17,79 @@ export default function ChatSidebar({
   selectedChat,
   onChatSelect,
 }: ChatSidebarProps) {
+  const [showMenu, setShowMenu] = useState(false);
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = () => {
+    logout();
+    router.push('/auth');
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+
   return (
     <div className="w-1/3 min-w-[320px] max-w-[420px] flex flex-col bg-[#111b21] border-r border-[#2a3942]">
       {/* Header */}
-      <div className="h-16 bg-[#202c33] px-4 flex items-center justify-between">
+      <div className="h-16 bg-[#202c33] px-4 flex items-center justify-between relative">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#6a7175] flex items-center justify-center cursor-pointer hover:bg-[#54656f] transition-colors">
-            <span className="text-lg">👤</span>
-          </div>
+          {user?.avatar ? (
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className="w-10 h-10 rounded-full"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-[#6a7175] flex items-center justify-center cursor-pointer hover:bg-[#54656f] transition-colors">
+              <span className="text-lg">👤</span>
+            </div>
+          )}
+          {user && (
+            <div>
+              <p className="text-sm text-[#e9edef] font-medium">{user.name}</p>
+              <p className="text-xs text-[#8696a0]">{user.email}</p>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button className="p-2 rounded-full hover:bg-[#2a3942] transition-colors">
             <MessageCircle className="w-5 h-5 text-[#aebac1]" />
           </button>
-          <button className="p-2 rounded-full hover:bg-[#2a3942] transition-colors">
-            <MoreVertical className="w-5 h-5 text-[#aebac1]" />
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 rounded-full hover:bg-[#2a3942] transition-colors"
+            >
+              <MoreVertical className="w-5 h-5 text-[#aebac1]" />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-12 bg-[#202c33] border border-[#2a3942] rounded-lg shadow-lg min-w-[180px] z-10">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-3 flex items-center gap-3 text-[#e9edef] hover:bg-[#2a3942] transition-colors rounded-lg"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="text-sm">Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
